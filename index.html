@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sunday League — Quick Match</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#101812;color:#f5f2e8;font:15px Arial,sans-serif;display:grid;place-items:center;padding:20px}.game{width:min(1100px,100%);background:#1b2920;border:1px solid #526451;border-radius:12px;padding:18px;box-shadow:0 24px 70px #0008}.head,.scoreline,.foot{display:flex;align-items:center;justify-content:space-between;gap:14px}.brand{font-weight:900;letter-spacing:.2em;color:#e6c56c;font-size:12px}.sub{font-size:11px;color:#9eae9f;letter-spacing:.15em}.scoreline{margin:16px 0;font-weight:900}.team{display:flex;align-items:center;gap:9px}.dot{width:12px;height:12px;border-radius:50%;background:#388be0}.red{background:#db5149}.score{font-size:30px;color:#f0d17b}.clock{font:700 18px monospace;background:#0c130e;padding:9px 13px;border:1px solid #526451;border-radius:4px}.field{position:relative;border:4px solid #d9ddc9;background:#28623b}canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}.overlay{position:absolute;inset:0;background:#07100bdc;display:grid;place-items:center;text-align:center;padding:20px}.overlay.off{display:none}.intro{max-width:460px}.intro h1{font-size:clamp(32px,6vw,58px);font-style:italic;text-transform:uppercase;margin:10px 0}.intro p{color:#c1cabe;line-height:1.5}button{background:#283b2d;color:white;border:1px solid #758671;border-radius:4px;padding:12px 18px;font-weight:bold;cursor:pointer;letter-spacing:.06em}button.primary{background:#e6c56c;color:#172016;border-color:#e6c56c}.foot{margin-top:14px;flex-wrap:wrap;color:#aab7a9;font-size:12px}.key{border:1px solid #647361;padding:3px 6px;border-radius:3px;color:#f2e8c7;font-family:monospace}.status{text-align:center;color:#e6c56c;font-size:12px;margin-top:10px;min-height:16px}@media(max-width:600px){.game{padding:10px}.score{font-size:22px}.scoreline{font-size:12px}.clock{font-size:14px}.sub{display:none}}
+</style>
+</head>
+<body><main class="game">
+<header class="head"><div class="brand">SUNDAY LEAGUE <span style="color:#fff">// FOOTBALL</span></div><div class="sub">CLASSIC 2006 EDITION</div></header>
+<div class="scoreline"><div class="team"><i class="dot"></i> BLUE FC</div><div class="score" id="score">0 — 0</div><div class="team">RED UNITED <i class="dot red"></i></div><div class="clock" id="clock">00:00</div></div>
+<div class="field"><canvas id="pitch" width="960" height="540"></canvas><div class="overlay" id="overlay"><div class="intro"><div class="brand">EXHIBITION MATCH</div><h1 id="title">Kick off.</h1><p id="description">A classic PES-inspired top-down match. Control Blue FC, find space, pass to teammates and score.</p><button class="primary" id="start">START QUICK MATCH</button></div></div></div>
+<div class="status" id="status">READY FOR KICK-OFF</div>
+<footer class="foot"><span><b class="key">WASD</b> / <b class="key">↑↓←→</b> Move</span><span><b class="key">SPACE</b> Shoot</span><span><b class="key">X</b> Pass</span><span><b class="key">TAB</b> Switch</span><span><b class="key">P</b> Pause</span><span>YOU CONTROL BLUE FC</span></footer>
+</main>
+<script>
+(()=>{
+const c=document.querySelector('#pitch'),g=c.getContext('2d'),W=960,H=540,$=s=>document.querySelector(s),keys={};
+let ps=[],ball={x:480,y:270,vx:0,vy:0,owner:-1},active=2,goals=[0,0],time=0,playing=false,paused=false,last=0;
+const homes=(team)=> (team===0?[[155,270],[285,130],[285,270],[285,410],[420,185],[420,355]]:[[805,270],[675,130],[675,270],[675,410],[540,185],[540,355]]).map((p,i)=>({team,i,x:p[0],y:p[1],hx:p[0],hy:p[1]}));
+function reset(){ps=[...homes(0),...homes(1)];active=2;ball={x:480,y:270,vx:0,vy:0,owner:-1}}
+function pitch(){g.clearRect(0,0,W,H);for(let i=0;i<10;i++){g.fillStyle=i%2?'#28613a':'#2d6941';g.fillRect(i*96,0,96,H)}g.strokeStyle='#edf0dc';g.lineWidth=3;g.strokeRect(28,24,904,492);g.beginPath();g.moveTo(480,24);g.lineTo(480,516);g.stroke();g.beginPath();g.arc(480,270,76,0,Math.PI*2);g.stroke();g.fillStyle='#edf0dc';g.beginPath();g.arc(480,270,4,0,7);g.fill();[28,832].forEach(x=>{g.strokeRect(x,150,100,240);g.strokeRect(x,205,42,130)});g.strokeRect(18,220,10,100);g.strokeRect(932,220,10,100)}
+function render(){pitch();ps.forEach((p,i)=>{g.fillStyle='#0007';g.beginPath();g.ellipse(p.x+2,p.y+9,13,6,0,0,7);g.fill();g.fillStyle=p.team?'#dc5048':'#348be0';g.beginPath();g.arc(p.x,p.y,12,0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=1.5;g.stroke();g.fillStyle='white';g.font='bold 10px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(p.i+1,p.x,p.y);if(i===active){g.strokeStyle='#ffe18a';g.lineWidth=3;g.beginPath();g.arc(p.x,p.y,18,0,7);g.stroke()}});g.fillStyle='#0008';g.beginPath();g.ellipse(ball.x+2,ball.y+7,8,4,0,0,7);g.fill();g.fillStyle='white';g.beginPath();g.arc(ball.x,ball.y,6,0,7);g.fill();g.strokeStyle='#222';g.stroke()}
+function closest(team){return ps.map((p,i)=>({p,i})).filter(o=>o.p.team===team).sort((a,b)=>Math.hypot(a.p.x-ball.x,a.p.y-ball.y)-Math.hypot(b.p.x-ball.x,b.p.y-ball.y))[0]}
+function pass(){if(ball.owner!==active)return;let p=ps[active],mate=ps.map((q,i)=>({q,i})).filter(o=>o.q.team===0&&o.i!==active).sort((a,b)=>Math.hypot(b.q.x-p.x,b.q.y-p.y)-Math.hypot(a.q.x-p.x,a.q.y-p.y))[0];kick(mate.q.x-p.x,mate.q.y-p.y,8);$('#status').textContent='PASS'}
+function kick(dx,dy,power){let d=Math.hypot(dx,dy)||1;ball.owner=-1;ball.vx=dx/d*power;ball.vy=dy/d*power}
+function shoot(){if(ball.owner!==active)return;let p=ps[active];kick(960-p.x,270-p.y,13);$('#status').textContent='SHOT!'}
+function score(team){goals[team]++;$('#score').textContent=goals[0]+' — '+goals[1];$('#status').textContent=team===0?'GOAL FOR BLUE FC!':'GOAL FOR RED UNITED!';reset()}
+function update(dt){if(!playing||paused)return;time+=dt;let p=ps[active],dx=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0),dy=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0),d=Math.hypot(dx,dy)||1;p.x=Math.max(38,Math.min(922,p.x+dx/d*190*dt));p.y=Math.max(34,Math.min(506,p.y+dy/d*190*dt));
+ps.forEach((q,i)=>{if(i===active)return;let tx=q.hx,ty=q.hy;if(q.team){tx=ball.x+55;ty=ball.y+(q.hy-270)*.3}else if(ball.owner===active){tx+=35}let vx=tx-q.x,vy=ty-q.y,n=Math.hypot(vx,vy)||1,step=(q.team?90:65)*dt;q.x+=vx/n*Math.min(step,n);q.y+=vy/n*Math.min(step,n)});
+if(ball.owner>=0){let o=ps[ball.owner];ball.x=o.x+(o.team?-13:13);ball.y=o.y+5;if(o.team===1&&Math.random()<.015)kick(-1,Math.random()-.5,8)}else{ball.x+=ball.vx;ball.y+=ball.vy;ball.vx*=.987;ball.vy*=.987;if(ball.y<30||ball.y>510)ball.vy*=-.8;ps.forEach((q,i)=>{if(Math.hypot(q.x-ball.x,q.y-ball.y)<17&&Math.hypot(ball.vx,ball.vy)<7)ball.owner=i})}
+if(ball.x<22){if(ball.y>215&&ball.y<325)score(1);else{ball.x=30;ball.vx=Math.abs(ball.vx)*.7}}if(ball.x>938){if(ball.y>215&&ball.y<325)score(0);else{ball.x=930;ball.vx=-Math.abs(ball.vx)*.7}}
+$('#clock').textContent=String(Math.floor(time/60)).padStart(2,'0')+':'+String(Math.floor(time%60)).padStart(2,'0');if(time>=300){playing=false;$('#title').textContent='FULL TIME';$('#description').textContent='Blue FC '+goals[0]+' — '+goals[1]+' Red United';$('#start').textContent='PLAY AGAIN';$('#overlay').classList.remove('off')}}
+function loop(t){let dt=Math.min((t-last)/1000||0,.04);last=t;update(dt);render();requestAnimationFrame(loop)}
+function start(){reset();goals=[0,0];time=0;playing=true;paused=false;$('#score').textContent='0 — 0';$('#clock').textContent='00:00';$('#overlay').classList.add('off');$('#status').textContent='KICK-OFF!'}
+$('#start').onclick=start;
+addEventListener('keydown',e=>{if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(e.key))e.preventDefault();keys[e.key]=true;if(e.repeat)return;if(e.key===' ')shoot();if(e.key.toLowerCase()==='x')pass();if(e.key==='Tab'){active=(active+1)%6}if(e.key.toLowerCase()==='p'&&playing){paused=!paused;$('#status').textContent=paused?'PAUSED':'PLAY ON'}});
+addEventListener('keyup',e=>keys[e.key]=false);reset();render();requestAnimationFrame(loop);
+})();
+</script></body></html>
